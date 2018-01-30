@@ -99,15 +99,18 @@
   (let [{:keys [options exit-message ok?]} (validate-args args)]
     (if exit-message
       (exit (if ok? 0 1) exit-message)
-      (let [config (edn/read-string (slurp (:conf options)))
-            deny? (rules/load-rules config)
-            lookup-query
-            (resolver (get config :resolver "8.8.8.8"))
-            log (logging/logger (:log config))
-            server (start-server
-                    {:port (get config :port 53)
-                     :deny? deny?
-                     :log log
-                     :lookup-query lookup-query})]
-        (println "Starting...")
-        @server))))
+      (let [config (edn/read-string (slurp (:conf options)))]
+        (when-let [blacklist (:black-list config)]
+          (when-not (.exists (clojure.java.io/as-file blacklist))
+            (exit 1 (str "ERROR: Blacklist not found; " blacklist))))
+        (let [deny? (rules/load-rules config)
+              lookup-query
+              (resolver (get config :resolver "8.8.8.8"))
+              log (logging/logger (:log config))
+              server (start-server
+                       {:port (get config :port 53)
+                        :deny? deny?
+                        :log log
+                        :lookup-query lookup-query})]
+          (println "Starting...")
+          @server)))))
