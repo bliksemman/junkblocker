@@ -1,13 +1,16 @@
 # junkblocker
 
-Junkblocker is a DNS proxy server that has filtering capabilities. The
-inteded purpose is to block junk; ads, analytics and time wasters
-like social media and news sites.
+Do you find yourself spending too much time on social media? Are you
+checking Facebook, Twitter, Youtube or other time sinks more than you
+really like?
 
-It supports both static blacklists and time-based rules. The last
-category allows domains only within the defined blocks of time. This
-can be usefull to allow news sites in the morning but block them until
-the work-day ends.
+Maybe Junkblocker can be of help. Junkblocker is a DNS proxy that has
+filtering capabilities. The inteded purpose is to block junk; ads,
+analytics and time wasters like social media and news sites.
+
+Allow access to Facebook and Twitter during breakfast and Lunch but
+not during working hours? Sure, Junkblocker can do that!
+
 
 ## Installation
 
