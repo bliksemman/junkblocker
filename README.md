@@ -25,7 +25,7 @@ following contents to `myconfig.edn`:
      ;; :log "log.txt" ;; Remove this to print to stdout
      :resolver "8.8.8.8" ;; The actual DNS resolver
      :blocked [] ;; List of domains to outright block
-     :black-list "blacklist.xt"
+     :black-list nil ;; Point this to a hosts file with black-listed domains
      :allow-during []} ;; Time based blocking
                     ; Can be something like below:
                     ; {:from "7" :to "9"
@@ -57,6 +57,10 @@ This can be set to file which contains blacklisted
 domains. Junkblocker can read files in "/etc/hosts" format. This means
 it can directly use files from public lists like
 [StevenBlack](https://github.com/StevenBlack/hosts).
+
+Run the next to command to get a nice starting point:
+
+	$ wget https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts -O blacklist.txt
 
 
 ### Allow-during
