@@ -56,7 +56,9 @@
 (def cli-options
   [["-h" "--help"]
    ["-c" "--conf PATH" "Path to config file."
-    :validate [#(.exists (clojure.java.io/as-file %))
+    :default (clojure.java.io/resource "defaults.edn")
+    :parse-fn clojure.java.io/as-file
+    :validate [#(.exists %)
                "Config file does not exists."]]])
 
 (defn usage [summary]

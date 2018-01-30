@@ -2,7 +2,7 @@
  ;; :log "log.txt" ;; Remove this to print to stdout
  :resolver "8.8.8.8" ;; The actual DNS resolver
  :blocked [] ;; List of domains to outright block
- :black-list "hosts.txt"
+ :black-list nil ;; Point this to a blacklist file "hosts.txt"
  :allow-during []} ;; Time based blocking
                 ; Can be something like below:
                 ; {:from "7" :to "9"
