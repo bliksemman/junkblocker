@@ -1,9 +1,7 @@
 (ns junkblocker.core
   (:gen-class)
+  (:import [java.net DatagramSocket DatagramPacket InetAddress])
   (:require
-   [manifold.deferred :as d]
-   [manifold.stream :as s]
-   [aleph.udp :as udp]
    [clojure.edn :as edn]
    [clojure.string :as str]
    [junkblocker.dns :as dns]
@@ -14,15 +12,15 @@
 (defn resolver [address]
   "Create a resolver that proxies a DNS request."
   (fn [query]
-    (d/let-flow [client-socket (udp/socket {})]
-      (d/chain
-       (s/put! client-socket
-               {:host    address
-                :port    53
-                :message (dns/encode query)})
-       (fn [_] (s/take! client-socket))
-       :message
-       dns/decode))))
+    (let [socket (DatagramSocket.)
+          request-data (dns/encode query)
+          request (DatagramPacket. request-data (alength request-data) (InetAddress/getByName address) 53)
+          response-data (byte-array 8192)
+          response (DatagramPacket. response-data (alength response-data))]
+      (.send socket request)
+      (.receive socket response)
+      (.close socket)
+      (dns/decode (.getData response)))))
 
 
 (defn denied-response [query]
@@ -32,23 +30,27 @@
   (let [message (:message request)
         query (dns/decode (:message request))
         domain (dns/domainname query)]
-    (->
-     (d/chain
-      (let [denied (deny? domain)]
+    (let [denied (deny? domain)
+          query-response (if denied
+                          (denied-response query)
+                          (lookup-query query))
+          response-data (dns/encode query-response)
+          response (DatagramPacket. response-data (alength response-data) (:sender request))]
         (log domain (if denied :blocked :ok))
-        (if denied
-          (d/success-deferred (denied-response query))
-          (lookup-query query)))
-      dns/encode
-      #(s/put! server-socket
-               {:socket-address (:sender request)
-                :message %}))
-     (d/catch Exception #(println "whoops, that didn't work:" %)))))
+        (.send server-socket response))))
 
 
 (defn start-server [{port :port :as conf}]
-  (let [server-socket @(udp/socket {:port port})]
-    (s/consume (partial handle-request conf server-socket) server-socket)))
+  (let [server-socket (DatagramSocket. port)]
+    (loop []
+      (let [receive-data (byte-array 8192)
+            receive-packet (DatagramPacket. receive-data (alength receive-data))]
+        (.receive server-socket receive-packet)
+        (let [request {:message (.getData receive-packet)
+                       :sender (.getSocketAddress receive-packet)}]
+          (handle-request conf server-socket request)
+          (recur))))))
+
 
 ;; CLI stuff
 ;; ---------
@@ -106,11 +108,10 @@
         (let [deny? (rules/load-rules config)
               lookup-query
               (resolver (get config :resolver "8.8.8.8"))
-              log (logging/logger (:log config))
-              server (start-server
-                       {:port (get config :port 53)
-                        :deny? deny?
-                        :log log
-                        :lookup-query lookup-query})]
+              log (logging/logger (:log config))]
           (println "Starting...")
-          @server)))))
+          (start-server
+            {:port (get config :port 53)
+             :deny? deny?
+             :log log
+             :lookup-query lookup-query}))))))
