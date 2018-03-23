@@ -69,20 +69,20 @@
        :log log
        :lookup-query lookup-query})))
 
+(defn reload-server-config [config-atom options]
+  (println "Reloading conf")
+  (let [conf (create-server-config options)]
+    (swap! config-atom merge conf)))
+
 (defn -main [& args]
   (let [{:keys [options exit-message ok?]} (validate-args args)]
     (if exit-message
       (exit (if ok? 0 1) exit-message)
       (let [{:keys [port] :as conf} (create-server-config options)
             config-atom (atom conf)]
-        (fs/watch (-> (:conf options) 
-                      .toPath
-                      .toAbsolutePath
-                      .getParent)
-          (fn []
-            (println "Reloading conf")
-            (let [conf (create-server-config options)]
-              (swap! config-atom merge conf))))
+        (fs/watch 
+          #(reload-server-config config-atom options)
+          (.toPath (:conf options)))
         (println "Starting...")
         (server/start port config-atom)))))
 
