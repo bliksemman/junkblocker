@@ -34,6 +34,9 @@ following contents to `myconfig.edn`:
                     ;            "www.welt.de"
 	
 
+The server automatically reloads the configuration when it has been changed.
+This can also be used to refresh the blacklist (see option below).
+
 The main options are explained below.
 
 ### Port
