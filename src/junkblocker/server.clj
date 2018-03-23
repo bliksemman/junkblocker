@@ -1,5 +1,5 @@
 (ns junkblocker.server
-    (:import [java.net DatagramSocket DatagramPacket InetAddress])
+    (:import [java.net DatagramSocket DatagramPacket InetAddress SocketTimeoutException])
     (:require
      [clojure.edn :as edn]
      [clojure.string :as str]
@@ -7,6 +7,8 @@
      [junkblocker.rules :as rules]
      [junkblocker.logging :as logging]))
   
+(def request-timeout 1000)  ; Timeout in milliseconds
+
 (defn resolver [address]
   "Create a resolver that proxies a DNS request."
   (fn [query]
@@ -15,21 +17,23 @@
           request (DatagramPacket. request-data (alength request-data) (InetAddress/getByName address) 53)
           response-data (byte-array 8192)
           response (DatagramPacket. response-data (alength response-data))]
-      (.send socket request)
-      (.receive socket response)
-      (.close socket)
-      (dns/decode (.getData response)))))
-  
-(defn denied-response [query]
-  (dns/deny query))
-  
+      (.setSoTimeout socket request-timeout)
+      (try
+        (do
+          (.send socket request)
+          (.receive socket response)
+          (dns/decode (.getData response)))
+        (catch SocketTimeoutException _
+          (dns/server-error query))
+        (finally (.close socket))))))
+
 (defn handle-request [{:keys [deny? log lookup-query]} server-socket request]
   (let [message (:message request)
         query (dns/decode (:message request))
         domain (dns/domainname query)]
     (let [denied (deny? domain)
           query-response (if denied
-                          (denied-response query)
+                          (dns/deny query)
                           (lookup-query query))
           response-data (dns/encode query-response)
           response (DatagramPacket. response-data (alength response-data) (:sender request))]

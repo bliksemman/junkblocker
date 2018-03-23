@@ -27,6 +27,15 @@
     message))
 
 
+(defn server-error [message]
+  (let [message (. message clone)]
+    (doto (.getHeader message)
+      (.setFlag (. Flags QR))
+      (.setFlag (. Flags RA))
+      (.setRcode (. Rcode SERVFAIL)))
+    message))
+
+
 (defn response-from 
   "Creates a new response for the given query based on the given
   response."
