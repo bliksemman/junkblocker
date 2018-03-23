@@ -15,10 +15,9 @@
 (def cli-options
   [["-h" "--help"]
    ["-c" "--conf PATH" "Path to config file."
-    :default (clojure.java.io/as-file (clojure.java.io/resource "defaults.edn"))
     :parse-fn clojure.java.io/as-file
     :validate [#(.exists %)
-               "Config file does not exists."]]])
+                "Config file does not exists."]]])
 
 (defn usage [summary]
   (->> ["Run a DNS proxy server. It can block certain requests based on "
@@ -53,9 +52,13 @@
       {:exit-message (error-msg errors)}
       :else
       {:options options})))
+      
+(defn default-config []
+  (clojure.java.io/resource "defaults.edn"))
 
 (defn create-server-config [options]
-  (let [config (edn/read-string (slurp (:conf options)))]
+  (let [config-file (get options :conf (default-config))
+        config (edn/read-string (slurp config-file))]
     (when-let [blacklist (:black-list config)]
       (when-not (.exists (clojure.java.io/as-file blacklist))
         ; FIXME: make exception / return error
@@ -80,9 +83,10 @@
       (exit (if ok? 0 1) exit-message)
       (let [{:keys [port] :as conf} (create-server-config options)
             config-atom (atom conf)]
-        (fs/watch 
-          #(reload-server-config config-atom options)
-          (.toPath (:conf options)))
+        (when-let [conf (:conf options)]    
+          (fs/watch 
+            #(reload-server-config config-atom options)
+            (.toPath conf)))
         (println "Starting...")
         (server/start port config-atom)))))
 
