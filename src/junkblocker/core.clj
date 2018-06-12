@@ -68,6 +68,7 @@
           (server/resolver (get config :resolver "8.8.8.8"))
           log (logging/logger (:log config))]
       {:port (get config :port 53)
+       :host (get config :host "")       
        :deny? deny?
        :log log
        :lookup-query lookup-query})))
@@ -81,12 +82,12 @@
   (let [{:keys [options exit-message ok?]} (validate-args args)]
     (if exit-message
       (exit (if ok? 0 1) exit-message)
-      (let [{:keys [port] :as conf} (create-server-config options)
+      (let [conf (create-server-config options)
             config-atom (atom conf)]
         (when-let [conf (:conf options)]    
           (fs/watch 
             #(reload-server-config config-atom options)
             (.toPath conf)))
         (println "Starting...")
-        (server/start port config-atom)))))
+        (server/start config-atom)))))
 

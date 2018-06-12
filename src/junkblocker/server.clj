@@ -1,11 +1,13 @@
 (ns junkblocker.server
-    (:import [java.net DatagramSocket DatagramPacket InetAddress SocketTimeoutException])
-    (:require
-     [clojure.edn :as edn]
-     [clojure.string :as str]
-     [junkblocker.dns :as dns]
-     [junkblocker.rules :as rules]
-     [junkblocker.logging :as logging]))
+  (:import
+   [java.net DatagramSocket DatagramPacket InetAddress
+    InetSocketAddress SocketTimeoutException])
+  (:require
+   [clojure.edn :as edn]
+   [clojure.string :as str]
+   [junkblocker.dns :as dns]
+   [junkblocker.rules :as rules]
+   [junkblocker.logging :as logging]))
   
 (def request-timeout 1000)  ; Timeout in milliseconds
 
@@ -14,7 +16,8 @@
   (fn [query]
     (let [socket (DatagramSocket.)
           request-data (dns/encode query)
-          request (DatagramPacket. request-data (alength request-data) (InetAddress/getByName address) 53)
+          request (DatagramPacket. request-data (alength request-data)
+                                   (InetAddress/getByName address) 53)
           response-data (byte-array 8192)
           response (DatagramPacket. response-data (alength response-data))]
       (.setSoTimeout socket request-timeout)
@@ -40,8 +43,10 @@
         (log domain (if denied :blocked :ok))
         (.send server-socket response))))
   
-(defn start [port conf]
-  (let [server-socket (DatagramSocket. port)]
+(defn start [conf]
+  (let [{:keys [host port]} @conf 
+        socket-address (InetSocketAddress. host port)
+        server-socket (DatagramSocket. socket-address)]
     (loop []
       (let [receive-data (byte-array 8192)
             receive-packet (DatagramPacket. receive-data (alength receive-data))]

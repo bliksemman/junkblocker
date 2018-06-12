@@ -22,6 +22,7 @@ A config file needs to be created to run the server. Copy the
 following contents to `myconfig.edn`:
 
     {:port 1153
+	 ;; :host "127.0.0.1" ;; Use host to bind to specific address.
      ;; :log "log.txt" ;; Remove this to print to stdout
      :resolver "8.8.8.8" ;; The actual DNS resolver
      :blocked [] ;; List of domains to outright block
@@ -44,6 +45,10 @@ The main options are explained below.
 Set this to the port number on which the server should listen. This
 should be 53 after tests have be done. Do not that this requires super
 user / root priviliges.
+
+### Host
+
+Use this option to bind the server to a specific address.
 
 ### Resolver
 

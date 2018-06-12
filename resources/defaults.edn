@@ -1,4 +1,5 @@
 {:port 1153
+ :host "localhost"
  ;; :log "log.txt" ;; Remove this to print to stdout
  :resolver "8.8.8.8" ;; The actual DNS resolver
  :blocked [] ;; List of domains to outright block
